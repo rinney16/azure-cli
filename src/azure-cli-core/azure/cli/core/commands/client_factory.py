@@ -80,35 +80,34 @@ def get_subscription_service_client(cli_ctx):
 def configure_common_settings(cli_ctx, client):
     client = _debug.change_ssl_cert_verification(client)
 
-    if hasattr(client, 'config'):
-        client.config.enable_http_logger = True
+    client.config.enable_http_logger = True
 
-        client.config.add_user_agent(UA_AGENT)
-        try:
-            client.config.add_user_agent(os.environ[ENV_ADDITIONAL_USER_AGENT])
-        except KeyError:
-            pass
+    client.config.add_user_agent(UA_AGENT)
+    try:
+        client.config.add_user_agent(os.environ[ENV_ADDITIONAL_USER_AGENT])
+    except KeyError:
+        pass
 
-        try:
-            command_ext_name = cli_ctx.data['command_extension_name']
-            if command_ext_name:
-                client.config.add_user_agent("CliExtension/{}".format(command_ext_name))
-        except KeyError:
-            pass
+    try:
+        command_ext_name = cli_ctx.data['command_extension_name']
+        if command_ext_name:
+            client.config.add_user_agent("CliExtension/{}".format(command_ext_name))
+    except KeyError:
+        pass
 
-        for header, value in cli_ctx.data['headers'].items():
-            # We are working with the autorest team to expose the add_header functionality of the generated client to avoid
-            # having to access private members
-            client._client.add_header(header, value)  # pylint: disable=protected-access
+    for header, value in cli_ctx.data['headers'].items():
+        # We are working with the autorest team to expose the add_header functionality of the generated client to avoid
+        # having to access private members
+        client._client.add_header(header, value)  # pylint: disable=protected-access
 
-        command_name_suffix = ';completer-request' if cli_ctx.data['completer_active'] else ''
-        # pylint: disable=protected-access
-        client._client.add_header('CommandName',
-                                  "{}{}".format(cli_ctx.data['command'], command_name_suffix))
-        if cli_ctx.data.get('safe_params'):
-            client._client.add_header('ParameterSetName',
-                                      ' '.join(cli_ctx.data['safe_params']))
-        client.config.generate_client_request_id = 'x-ms-client-request-id' not in cli_ctx.data['headers']
+    command_name_suffix = ';completer-request' if cli_ctx.data['completer_active'] else ''
+    # pylint: disable=protected-access
+    client._client.add_header('CommandName',
+                              "{}{}".format(cli_ctx.data['command'], command_name_suffix))
+    if cli_ctx.data.get('safe_params'):
+        client._client.add_header('ParameterSetName',
+                                  ' '.join(cli_ctx.data['safe_params']))
+    client.config.generate_client_request_id = 'x-ms-client-request-id' not in cli_ctx.data['headers']
 
 
 def _get_mgmt_service_client(cli_ctx,
@@ -143,7 +142,8 @@ def _get_mgmt_service_client(cli_ctx,
     else:
         client = client_type(cred, **client_kwargs)
 
-    configure_common_settings(cli_ctx, client)
+    if hasattr(client, 'config'):
+        configure_common_settings(cli_ctx, client)
 
     return client, subscription_id
 
